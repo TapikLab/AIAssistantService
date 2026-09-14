@@ -10,6 +10,7 @@ import { RedisModule } from '@common/redis/redis.module';
 import { PrismaModule } from '@common/prisma/prisma.module';
 import { AssistantModule } from '@modules/assistant/assistant.module';
 import { ScheduleModule } from '@modules/schedule/schedule.module';
+import { DigestModule } from './modules/digest/digest.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ScheduleModule } from '@modules/schedule/schedule.module';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
     RedisModule,
     PrismaModule,
+    DigestModule,
   ],
   controllers: [AppController],
   providers: [

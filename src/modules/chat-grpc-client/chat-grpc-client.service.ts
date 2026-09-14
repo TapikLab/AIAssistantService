@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   ChatInternalService,
   SendMessageInternalResponse,
+  UnreadChat,
 } from './chat-grpc-client.interface';
 import { buildInternalGrpcMetadata } from './internal-grpc-metadata';
 
@@ -40,6 +41,19 @@ export class ChatGrpcClientService implements OnModuleInit {
       this.chatInternalService.isMember({ chatId, userId }, this.metadata()),
     );
     return response.isMember;
+  }
+
+  async getUnreadMessages(
+    userId: string,
+    maxMessagesPerChat = 20,
+  ): Promise<UnreadChat[]> {
+    const response = await firstValueFrom(
+      this.chatInternalService.getUnreadMessages(
+        { userId, maxMessagesPerChat },
+        this.metadata(),
+      ),
+    );
+    return response.chats;
   }
 
   private metadata() {

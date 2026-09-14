@@ -37,14 +37,15 @@
 
 ## API
 
-Все эндпоинты защищены `JwtAuthGuard`, кроме `GET /`.
+Все эндпоинты защищены `JwtAuthGuard`, кроме `GET /` (исключение | `GET /assistant/digest`).
 
-| Метод | Путь | Rate limit | Описание |
-|---|---|---|---|
-| `POST` | `/assistant/suggest-replies` | 10/мин | Сгенерировать 3 варианта ответа по истории сообщений |
-| `POST` | `/assistant/schedule` | — | Запланировать отложенную отправку сообщения в чат |
-| `GET` | `/assistant/schedule` | — | Список ожидающих отправки сообщений текущего пользователя |
-| `DELETE` | `/assistant/schedule/:id` | — | Отменить запланированное сообщение |
+| Метод    | Путь                         | Rate limit | Описание                                                          |
+| -------- | ---------------------------- | ---------- | ----------------------------------------------------------------- |
+| `POST`   | `/assistant/suggest-replies` | 10/мин     | Сгенерировать 3 варианта ответа по истории сообщений              |
+| `POST`   | `/assistant/schedule`        | —          | Запланировать отложенную отправку сообщения в чат                 |
+| `GET`    | `/assistant/schedule`        | —          | Список ожидающих отправки сообщений текущего пользователя         |
+| `GET`    | `/assistant/digest`          | 10/мин     | Дайджест непрочитанных сообщений по всем чатам (кэш 120с в Redis) |
+| `DELETE` | `/assistant/schedule/:id`    | —          | Отменить запланированное сообщение                                |
 
 ### `POST /assistant/suggest-replies`
 
@@ -56,6 +57,7 @@
   "participantName": "Аня"
 }
 ```
+
 → `["Привет! Отлично, а у тебя?", "Привет! Занят немного, но норм", "Привет, всё хорошо!"]`
 
 ### `POST /assistant/schedule`
@@ -69,6 +71,7 @@
 Использует `chat.proto` (`ChatInternal`): `SendMessageInternal`, `IsMember`. Каждый вызов несёт метаданные `x-internal-key: <INTERNAL_API_KEY>` — ChatService отклонит запрос без корректного ключа (`InternalGrpcAuthGuard` на стороне ChatService).
 
 Планировщик (`ScheduleRunnerService`, `@Cron(EVERY_30_SECONDS)`):
+
 1. Берёт из БД до 50 сообщений со статусом `pending` и `sendAt <= now()`.
 2. Захватывает Redis-блокировку (`SET NX PX 25000`) — при горизонтальном масштабировании только один инстанс обрабатывает тик, сообщения не дублируются.
 3. Для каждого сообщения повторно проверяет членство отправителя в чате (`IsMember`) — если пользователя успели удалить из чата, сообщение помечается `failed`, а не отправляется.
@@ -76,19 +79,20 @@
 
 ## Переменные окружения
 
-| Переменная | Обязательна | Назначение |
-|---|---|---|
-| `PORT` | нет (3007) | HTTP-порт |
-| `JWT_SECRET` | да | Секрет для проверки access-токенов (общий с AuthService) |
-| `AI_PROVIDER` | нет (`groq`) | `groq` или `ollama` |
-| `GROQ_API_KEY` | да, если `AI_PROVIDER=groq` | Ключ Groq API |
-| `GROQ_MODEL` | нет | Модель Groq (по умолчанию `qwen/qwen3.8-27b`) |
-| `OLLAMA_URL` | да, если `AI_PROVIDER=ollama` | URL self-hosted Ollama |
-| `OLLAMA_MODEL` | да, если `AI_PROVIDER=ollama` | Имя модели в Ollama |
-| `REDIS_HOST` / `REDIS_PORT` | нет | Redis для кэша контекста |
-| `DATABASE_URL` | да | Строка подключения PostgreSQL |
-| `CHAT_SERVICE_GRPC_URL` | да | Адрес gRPC-сервера ChatService |
-| `INTERNAL_API_KEY` | да | Shared-secret для внутренних gRPC-вызовов (тот же ключ, что у ChatService/MediaService/ReactionsService) |
+| Переменная                  | Обязательна                   | Назначение                                                                                               |
+| --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `PORT`                      | нет (3007)                    | HTTP-порт                                                                                                |
+| `JWT_SECRET`                | да                            | Секрет для проверки access-токенов (общий с AuthService)                                                 |
+| `AI_PROVIDER`               | нет (`groq`)                  | `groq` или `ollama`                                                                                      |
+| `GROQ_API_KEY`              | да, если `AI_PROVIDER=groq`   | Ключ Groq API                                                                                            |
+| `GROQ_MODEL`                | нет                           | Модель Groq (по умолчанию `qwen/qwen3.8-27b`)                                                            |
+| `OLLAMA_URL`                | да, если `AI_PROVIDER=ollama` | URL self-hosted Ollama                                                                                   |
+| `OLLAMA_MODEL`              | да, если `AI_PROVIDER=ollama` | Имя модели в Ollama                                                                                      |
+| `REDIS_HOST` / `REDIS_PORT` | нет                           | Redis для кэша контекста                                                                                 |
+| `DATABASE_URL`              | да                            | Строка подключения PostgreSQL                                                                            |
+| `CHAT_SERVICE_GRPC_URL`     | да                            | Адрес gRPC-сервера ChatService                                                                           |
+| `INTERNAL_API_KEY`          | да                            | Shared-secret для внутренних gRPC-вызовов (тот же ключ, что у ChatService/MediaService/ReactionsService) |
+| `USER_SERVICE_GRPC_URL`     | да                            | Адрес gRPC-сервера UserService (`UserInternal.GetProfiles`)                                              |
 
 ## Структура проекта
 

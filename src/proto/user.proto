@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package user;
+
+service UserInternal {
+  rpc GetProfiles (GetProfilesRequest) returns (GetProfilesResponse);
+}
+
+message GetProfilesRequest {
+  repeated string userIds = 1;
+}
+
+message ProfileSummary {
+  string userId = 1;
+  string username = 2;
+  string avatarUrl = 3;
+}
+
+message GetProfilesResponse {
+  repeated ProfileSummary profiles = 1;
+}
