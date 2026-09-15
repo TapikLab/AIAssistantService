@@ -64,17 +64,25 @@ export class DigestService {
     });
 
     const systemPrompt = `Ты помощник, который кратко пересказывает пользователю, что он пропустил в чатах, пока отсутствовал.
-            Напиши связный дайджест в 2-4 предложениях на русском языке, сохраняя имена людей и суть просьб/новостей.
-            Не используй списки и заголовки — только связный текст, как будто рассказываешь другу, что было, пока его не было.
-            Не выдумывай ничего, чего нет в переданных сообщениях.`;
+          Напиши связный дайджест в 2-4 предложениях на русском языке, сохраняя имена людей и суть просьб/новостей.
+          Не используй списки и заголовки — только связный текст.
+          Не выдумывай ничего, чего нет в переданных сообщениях.
+          Ответ верни строго в формате json с полем "summary".`;
 
     const userPrompt = chatLines.join('\n\n');
 
     let summary: string;
     try {
-      summary = (
-        await this.modelProvider.generate(systemPrompt, userPrompt)
-      ).trim();
+      const rawResponse = await this.modelProvider.generate(
+        systemPrompt,
+        userPrompt,
+      );
+
+      // Парсим JSON от модели (с очисткой markdown-обёрток, если провайдер их добавляет)
+      const cleanJson = rawResponse.replace(/```json\s*|```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      summary = (parsed.summary ?? rawResponse).trim();
     } catch (error) {
       this.logger.error(`Не удалось сгенерировать дайджест: ${error}`);
       summary = `У вас ${unreadCount} непрочитанных сообщений.`;

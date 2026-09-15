@@ -7,12 +7,14 @@ service ChatInternal {
   rpc IsMember (MembershipRequest) returns (MembershipResponse);
   rpc SendMessageInternal (SendMessageInternalRequest) returns (SendMessageInternalResponse);
   rpc GetUnreadMessages (UnreadMessagesRequest) returns (UnreadMessagesResponse);
+  rpc GetUserMessagesInChat (UserMessagesInChatRequest) returns (UserMessagesInChatResponse);
 }
 
 message SendMessageInternalRequest{
   string chatId = 1;
   string senderId = 2;
   string content = 3;
+  bool viaAssistant = 4;
 }
 
 message SendMessageInternalResponse {
@@ -61,4 +63,14 @@ message UnreadChat {
 
 message UnreadMessagesResponse {
   repeated UnreadChat chats = 1;
+}
+
+message UserMessagesInChatRequest {
+  string chatId = 1;
+  string userId = 2;
+  int32 limit = 3;
+}
+
+message UserMessagesInChatResponse {
+  repeated string messages = 1;
 }
