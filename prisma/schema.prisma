@@ -19,3 +19,15 @@ model ScheduledMessage {
 
   @@index([status, sendAt])
 }
+
+model AutoReplySetting {
+  id                 String   @id @default(uuid())
+  userId             String
+  chatId             String
+  enabled            Boolean  @default(true)
+  customInstructions String?  @db.Text
+  updateAt           DateTime @updatedAt
+
+  @@unique([userId, chatId])
+  @@index([userId])
+}

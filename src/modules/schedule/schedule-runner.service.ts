@@ -7,6 +7,9 @@ import { ChatGrpcClientService } from '@modules/chat-grpc-client/chat-grpc-clien
 
 const LOCK_KEY = 'assistant:schedule-runner:lock';
 const LOCK_TTL_MS = 25_000;
+const CLEANUP_LOCK_KEY = 'assistant:schedule-cleanup:lock';
+const CLEANUP_LOCK_TTL_MS = 25_000;
+const TERMINAL_MESSAGE_RETENTION_DAYS = 30;
 
 @Injectable()
 export class ScheduleRunnerService {
@@ -35,15 +38,29 @@ export class ScheduleRunnerService {
     try {
       const due = await this.prisma.scheduledMessage.findMany({
         where: { status: 'pending', sendAt: { lte: new Date() } },
+        orderBy: { sendAt: 'asc' },
         take: 50,
       });
 
       let processed = 0;
       for (const message of due) {
+        const claimed = await this.prisma.scheduledMessage.updateMany({
+          where: { id: message.id, status: 'pending' },
+          data: { status: 'processing' },
+        });
+        if (claimed.count === 0) continue;
+
         try {
           await this.processMessage(message);
           processed++;
         } catch (error) {
+          await this.prisma.scheduledMessage
+            .updateMany({
+              where: { id: message.id, status: 'processing' },
+              data: { status: 'pending' },
+            })
+            .catch(() => undefined);
+
           this.logger.error(
             `Не удалось обработать отложенное сообщение ${message.id}: ${error}`,
           );
@@ -55,6 +72,40 @@ export class ScheduleRunnerService {
       }
     } finally {
       await this.releaseLockIfOwned();
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async purgeTerminalMessages(): Promise<void> {
+    const acquired = await this.redisService.client.set(
+      CLEANUP_LOCK_KEY,
+      this.instanceId,
+      'PX',
+      CLEANUP_LOCK_TTL_MS,
+      'NX',
+    );
+    if (!acquired) return;
+
+    try {
+      const cutoff = new Date(
+        Date.now() - TERMINAL_MESSAGE_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      );
+      const { count } = await this.prisma.scheduledMessage.deleteMany({
+        where: {
+          status: { in: ['sent', 'failed', 'cancelled'] },
+          createdAt: { lt: cutoff },
+        },
+      });
+      if (count > 0) {
+        this.logger.log(`Удалено завершённых отложенных сообщений: ${count}`);
+      }
+    } finally {
+      await this.redisService.client.eval(
+        'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end',
+        1,
+        CLEANUP_LOCK_KEY,
+        this.instanceId,
+      );
     }
   }
 
@@ -94,10 +145,12 @@ export class ScheduleRunnerService {
     });
   }
 
-  private async releaseLockIfOwned() {
-    const current = await this.redisService.client.get(LOCK_KEY);
-    if (current === this.instanceId) {
-      await this.redisService.client.del(LOCK_KEY);
-    }
+  private async releaseLockIfOwned(): Promise<void> {
+    await this.redisService.client.eval(
+      'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end',
+      1,
+      LOCK_KEY,
+      this.instanceId,
+    );
   }
 }

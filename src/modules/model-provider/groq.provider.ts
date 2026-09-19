@@ -16,7 +16,7 @@ export class GroqProvider extends BaseModelProvider {
     this.client = new Groq({
       apiKey: this.configService.getOrThrow<string>('GROQ_API_KEY'),
     });
-    this.model = this.configService.getOrThrow<string>(
+    this.model = this.configService.get<string>(
       'GROQ_MODEL',
       'qwen/qwen3.8-27b',
     );
@@ -34,7 +34,9 @@ export class GroqProvider extends BaseModelProvider {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        response_format: { type: 'json_object' },
+        ...(options.responseFormat === 'json'
+          ? { response_format: { type: 'json_object' as const } }
+          : {}),
         temperature: options.temperature,
         max_tokens: options.maxTokens,
       },

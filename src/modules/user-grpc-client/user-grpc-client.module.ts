@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
             package: 'user',
             protoPath: join(process.cwd(), 'dist/proto/user.proto'),
             url: config.getOrThrow<string>('USER_SERVICE_GRPC_URL'),
+            loader: { defaults: true },
           },
         }),
         inject: [ConfigService],

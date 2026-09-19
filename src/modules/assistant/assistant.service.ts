@@ -21,13 +21,17 @@ export class AssistantService {
     @Inject('MODEL_PROVIDER') private readonly modelProvider: ModelProvider,
   ) {}
 
-  async suggestReplies(dto: SuggestReplyDto): Promise<string[]> {
-    const context = await this.resolveContext(dto);
+  async suggestReplies(
+    dto: SuggestReplyDto,
+    userId?: string,
+  ): Promise<string[]> {
+    const context = await this.resolveContext(dto, userId);
     const { systemPrompt, userPrompt } = this.buildPrompt(dto, context);
 
     const rawResponse = await this.modelProvider.generate(
       systemPrompt,
       userPrompt,
+      { responseFormat: 'json' },
     );
     return this.parseSuggestions(rawResponse);
   }
@@ -86,12 +90,13 @@ export class AssistantService {
 
   private async resolveContext(
     dto: SuggestReplyDto,
+    userId?: string,
   ): Promise<AssistantContext> {
     if (!dto.chatId) {
       return { participantName: dto.participantName };
     }
 
-    const cacheKey = `assistant_context:${dto.chatId}`;
+    const cacheKey = `assistant_context:${dto.chatId}${userId ? `:${userId}` : ''}`;
 
     if (dto.participantName) {
       await this.redisService.client.set(
@@ -102,7 +107,6 @@ export class AssistantService {
       );
       return { participantName: dto.participantName };
     }
-
     const cached = await this.redisService.client.get(cacheKey);
     return cached ? (JSON.parse(cached) as AssistantContext) : {};
   }

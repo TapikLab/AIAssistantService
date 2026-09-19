@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatInternalService,
+  RecentMessage,
   SendMessageInternalResponse,
   UnreadChat,
 } from './chat-grpc-client.interface';
@@ -27,10 +28,11 @@ export class ChatGrpcClientService implements OnModuleInit {
     chatId: string,
     senderId: string,
     content: string,
+    viaAssistant = false,
   ): Promise<SendMessageInternalResponse> {
     return firstValueFrom(
       this.chatInternalService.sendMessageInternal(
-        { chatId, senderId, content },
+        { chatId, senderId, content, viaAssistant },
         this.metadata(),
       ),
     );
@@ -53,7 +55,34 @@ export class ChatGrpcClientService implements OnModuleInit {
         this.metadata(),
       ),
     );
-    return response.chats;
+    return response.chats ?? [];
+  }
+
+  async getUserMessagesInChat(
+    chatId: string,
+    userId: string,
+    limit = 15,
+  ): Promise<string[]> {
+    const response = await firstValueFrom(
+      this.chatInternalService.getUserMessagesInChat(
+        { chatId, userId, limit },
+        this.metadata(),
+      ),
+    );
+    return response.messages ?? [];
+  }
+
+  async getRecentMessages(
+    chatId: string,
+    limit = 10,
+  ): Promise<RecentMessage[]> {
+    const response = await firstValueFrom(
+      this.chatInternalService.getRecentMessages(
+        { chatId, limit },
+        this.metadata(),
+      ),
+    );
+    return response.messages ?? [];
   }
 
   private metadata() {

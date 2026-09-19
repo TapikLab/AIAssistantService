@@ -28,7 +28,7 @@ export class UserGrpcClientService implements OnModuleInit {
     const response = await firstValueFrom(
       this.userInternalService.getProfiles({ userIds }, this.metadata()),
     );
-    return response.profiles;
+    return response.profiles ?? [];
   }
 
   private metadata() {

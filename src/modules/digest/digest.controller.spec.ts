@@ -1,17 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DigestController } from './digest.controller';
-
+import { DigestService } from './digest.service';
+import { JwtAuthGuard } from '@common/auth/jwt-auth.guard';
 describe('DigestController', () => {
   let controller: DigestController;
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DigestController],
-    }).compile();
-
+      providers: [
+        { provide: DigestService, useValue: { getDigest: jest.fn() } },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     controller = module.get<DigestController>(DigestController);
   });
-
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });

@@ -8,6 +8,7 @@ service ChatInternal {
   rpc SendMessageInternal (SendMessageInternalRequest) returns (SendMessageInternalResponse);
   rpc GetUnreadMessages (UnreadMessagesRequest) returns (UnreadMessagesResponse);
   rpc GetUserMessagesInChat (UserMessagesInChatRequest) returns (UserMessagesInChatResponse);
+  rpc GetRecentMessages (RecentMessagesRequest) returns (RecentMessagesResponse);
 }
 
 message SendMessageInternalRequest{
@@ -73,4 +74,20 @@ message UserMessagesInChatRequest {
 
 message UserMessagesInChatResponse {
   repeated string messages = 1;
+}
+
+message RecentMessagesRequest {
+  string chatId = 1;
+  int32 limit = 2;
+}
+
+message RecentMessage {
+  string senderId = 1;
+  string content = 2;
+  bool viaAssistant = 3;
+  string createdAt = 4;
+}
+
+message RecentMessagesResponse {
+  repeated RecentMessage messages = 1;
 }

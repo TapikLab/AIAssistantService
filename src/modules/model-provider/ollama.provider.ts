@@ -36,7 +36,7 @@ export class OllamaProvider extends BaseModelProvider {
           system: systemPrompt,
           prompt: userPrompt,
           stream: false,
-          format: 'json',
+          ...(options.responseFormat === 'json' ? { format: 'json' } : {}),
           options: {
             temperature: options.temperature,
             num_predict: options.maxTokens,

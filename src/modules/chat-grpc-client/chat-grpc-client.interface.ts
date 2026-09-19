@@ -5,6 +5,7 @@ export interface SendMessageInternalRequest {
   chatId: string;
   senderId: string;
   content: string;
+  viaAssistant?: boolean;
 }
 
 export interface SendMessageInternalResponse {
@@ -47,6 +48,32 @@ export interface UnreadMessagesResponse {
   chats: UnreadChat[];
 }
 
+export interface UserMessagesInChatRequest {
+  chatId: string;
+  userId: string;
+  limit: number;
+}
+
+export interface UserMessagesInChatResponse {
+  messages: string[];
+}
+
+export interface RecentMessagesRequest {
+  chatId: string;
+  limit: number;
+}
+
+export interface RecentMessage {
+  senderId: string;
+  content: string;
+  viaAssistant: boolean;
+  createdAt: string;
+}
+
+export interface RecentMessagesResponse {
+  messages: RecentMessage[];
+}
+
 export interface ChatInternalService {
   sendMessageInternal(
     data: SendMessageInternalRequest,
@@ -60,4 +87,12 @@ export interface ChatInternalService {
     data: UnreadMessagesRequest,
     metadata?: Metadata,
   ): Observable<UnreadMessagesResponse>;
+  getUserMessagesInChat(
+    data: UserMessagesInChatRequest,
+    metadata?: Metadata,
+  ): Observable<UserMessagesInChatResponse>;
+  getRecentMessages(
+    data: RecentMessagesRequest,
+    metadata?: Metadata,
+  ): Observable<RecentMessagesResponse>;
 }

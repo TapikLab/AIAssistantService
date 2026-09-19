@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
             package: 'chat',
             protoPath: join(process.cwd(), 'dist/proto/chat.proto'),
             url: config.getOrThrow<string>('CHAT_SERVICE_GRPC_URL'),
+            loader: { defaults: true },
           },
         }),
         inject: [ConfigService],
