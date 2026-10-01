@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatInternalService,
+  DirectChat,
   RecentMessage,
   SendMessageInternalResponse,
   UnreadChat,
@@ -83,6 +84,13 @@ export class ChatGrpcClientService implements OnModuleInit {
       ),
     );
     return response.messages ?? [];
+  }
+
+  async getDirectChats(userId: string): Promise<DirectChat[]> {
+    const response = await firstValueFrom(
+      this.chatInternalService.getDirectChats({ userId }, this.metadata()),
+    );
+    return response.chats ?? [];
   }
 
   private metadata() {

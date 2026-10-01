@@ -13,6 +13,7 @@ import { ScheduleModule } from '@modules/schedule/schedule.module';
 import { DigestModule } from '@modules/digest/digest.module';
 import { AutoReplyModule } from '@modules/auto-reply/auto-reply.module';
 import { AutoReplyTriggerModule } from '@modules/auto-reply-trigger/auto-reply-trigger.module';
+import { PersonalChatModule } from '@modules/personal-chat/personal-chat.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AutoReplyTriggerModule } from '@modules/auto-reply-trigger/auto-reply-t
     DigestModule,
     AutoReplyModule,
     AutoReplyTriggerModule,
+    PersonalChatModule,
     AuthModule,
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
     RedisModule,

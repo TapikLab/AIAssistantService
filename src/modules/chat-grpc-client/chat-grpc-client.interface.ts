@@ -74,6 +74,19 @@ export interface RecentMessagesResponse {
   messages: RecentMessage[];
 }
 
+export interface UserIdRequest {
+  userId: string;
+}
+
+export interface DirectChat {
+  chatId: string;
+  otherMemberId: string;
+}
+
+export interface DirectChatsResponse {
+  chats: DirectChat[];
+}
+
 export interface ChatInternalService {
   sendMessageInternal(
     data: SendMessageInternalRequest,
@@ -95,4 +108,8 @@ export interface ChatInternalService {
     data: RecentMessagesRequest,
     metadata?: Metadata,
   ): Observable<RecentMessagesResponse>;
+  getDirectChats(
+    data: UserIdRequest,
+    metadata?: Metadata,
+  ): Observable<DirectChatsResponse>;
 }

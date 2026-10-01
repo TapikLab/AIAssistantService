@@ -26,8 +26,41 @@ model AutoReplySetting {
   chatId             String
   enabled            Boolean  @default(true)
   customInstructions String?  @db.Text
+  version            Int      @default(0)
   updateAt           DateTime @updatedAt
 
   @@unique([userId, chatId])
   @@index([userId])
+}
+
+enum PersonalChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model PersonalChatMessage {
+  id              String            @id @default(uuid())
+  userId          String
+  role            PersonalChatRole
+  content         String            @db.Text
+  attachments     Json?
+  intent          Json?
+  clientMessageId String?
+  createdAt       DateTime          @default(now())
+
+  @@unique([userId, clientMessageId])
+  @@index([userId, createdAt])
+}
+
+model AssistantRuleAuditLog {
+  id              String   @id @default(uuid())
+  userId          String
+  targetChatId    String
+  action          String
+  payload         Json
+  sourceMessageId String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId, targetChatId])
 }
