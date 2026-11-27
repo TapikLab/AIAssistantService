@@ -64,3 +64,34 @@ model AssistantRuleAuditLog {
 
   @@index([userId, targetChatId])
 }
+
+model TrustedTeeMeasurement {
+  platform     String                   @db.VarChar(16)
+  measurements Bytes                    @db.ByteA
+  publishedAt  DateTime                 @default(now()) @db.Timestamptz(3)
+  proof        TrustedMeasurementProof?
+
+  @@id([platform, measurements])
+}
+
+model TrustedMeasurementProof {
+  platform     String @db.VarChar(16)
+  measurements Bytes  @db.ByteA
+  signature    Bytes  @db.ByteA
+
+  entry TrustedTeeMeasurement @relation(fields: [platform, measurements], references: [platform, measurements], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([platform, measurements])
+}
+
+model SnpChallenge {
+  requestId         String    @id @db.Uuid
+  nonce             Bytes     @db.ByteA
+  keyHash           Bytes     @db.ByteA
+  expiresAt         DateTime  @db.Timestamptz(6)
+  consumedAt        DateTime? @db.Timestamptz(6)
+  releaseEnvelope   String?   @db.Text
+  releaseReportHash Bytes?    @db.ByteA
+
+  @@index([expiresAt])
+}

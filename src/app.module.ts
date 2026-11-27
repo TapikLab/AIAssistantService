@@ -15,6 +15,9 @@ import { AutoReplyModule } from '@modules/auto-reply/auto-reply.module';
 import { AutoReplyTriggerModule } from '@modules/auto-reply-trigger/auto-reply-trigger.module';
 import { PersonalChatModule } from '@modules/personal-chat/personal-chat.module';
 
+import { MeasurementRegistryController } from '@modules/attestation/measurement-registry.controller';
+import { MeasurementRegistryService } from '@modules/attestation/measurement-registry.service';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,9 +35,10 @@ import { PersonalChatModule } from '@modules/personal-chat/personal-chat.module'
     RedisModule,
     PrismaModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, MeasurementRegistryController],
   providers: [
     AppService,
+    MeasurementRegistryService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
