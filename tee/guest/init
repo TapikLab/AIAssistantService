@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+
+[ "$$" -eq 1 ] || { echo 'GUEST_PID1_REQUIRED' >&2; exit 1; }
+
+stop_guest() {
+  echo "TAPIK_BOOT_STOP: $1" >&2
+  poweroff -f || :
+  while :; do sleep 3600; done
+}
+trap 'stop_guest BOOT_FAILED' EXIT
+
+archive=/assistant.oci.tar
+expected=6592db2d083928c53a9c41bbbca91f6e79723dd5493d91500f4f4a318664b841
+work=/tapik-boot
+layout=$work/layout
+root=$work/rootfs
+
+mkdir -p /proc /sys /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+printf '%s  %s\n' "$expected" "$archive" | sha256sum -c - ||
+  stop_guest OCI_ARCHIVE_MISMATCH
+
+mkdir "$work" "$layout"
+tar -xf "$archive" -C "$layout"
+jq -e '
+  select((.manifests | length) == 1)
+  | .manifests[0].annotations["org.opencontainers.image.ref.name"] = "assistant"
+' "$layout/index.json" > "$layout/index.next"
+mv "$layout/index.next" "$layout/index.json"
+umoci raw unpack --image "$layout:assistant" "$root"
+
+mkdir -p "$root/proc" "$root/sys" "$root/dev"
+mount --bind /proc "$root/proc"
+mount --bind /sys "$root/sys"
+mount --bind /dev "$root/dev"
+
+echo 'TAPIK_STARTING_ASSISTANT'
+env -i PATH=/usr/local/bin:/usr/bin:/bin NODE_ENV=production PORT=3007 \
+  /usr/sbin/chroot --userspec=node:node --groups=1000 "$root" \
+  /bin/sh -ec 'cd /app && exec docker-entrypoint.sh node dist/main.js' ||
+  stop_guest ASSISTANT_EXITED_WITH_ERROR
+
+stop_guest ASSISTANT_EXITED
